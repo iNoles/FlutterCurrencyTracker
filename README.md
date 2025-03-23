@@ -6,6 +6,7 @@ A Flutter app that tracks live exchange rates with interactive charts. Users can
 - 📈 **Live Exchange Rates** – Fetch real-time rates for multiple currencies.
 - 📊 **Interactive Charts** – Visualize historical exchange rate trends.
 - 🔄 **Currency Conversion** – Easily switch between different base currencies.
+- 🌗 **Dark Mode Support** – Adapts to system settings for a better experience.
 - 🎨 **Modern UI** – Clean and intuitive interface with Material Design.
 - 🔍 **Fast & Lightweight** – Optimized for performance.
 
@@ -38,6 +39,7 @@ A Flutter app that tracks live exchange rates with interactive charts. Users can
 ## 🗺 Roadmap
 - Support more fiat & crypto currencies 🪙
 - Offline caching for recent exchange rates
+- Enhanced UI customization options
 
 ## 🤝 Contributing
 
