@@ -12,6 +12,10 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        
+      - name: Create .env file
+        run: |
+          echo "API_KEY=${{ secrets.API_KEY }}" > .env
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
