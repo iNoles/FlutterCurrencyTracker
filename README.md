@@ -11,7 +11,9 @@ A Flutter app that tracks live exchange rates with interactive charts. Users can
 - 🔍 **Fast & Lightweight** – Optimized for performance.
 
 ## 📸 Screenshots
-
+![Main](./images/main.png)
+![Bottom Sheet](./images/bottom_sheet.png)
+![Convert Currency](./images/convert.png)
 
 ## 🛠 Tech Stack
 - **Flutter** (Dart)
