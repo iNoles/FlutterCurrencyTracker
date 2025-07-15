@@ -31,7 +31,7 @@ A Flutter app that tracks live exchange rates with interactive charts. Users can
 
 1. Clone the repository:
    ```sh
-   git clone https://github.com/yourusername/FlutterCurrencyTracker.git
+   git clone https://github.com/iNoles/FlutterCurrencyTracker.git
    ```
 
 2. Navigate to the project folder:
