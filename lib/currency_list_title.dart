@@ -30,11 +30,11 @@ class CurrencyListTile extends StatelessWidget {
         contentPadding: const EdgeInsets.all(12),
         title: Text(
           currency,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          style: Theme.of(context).textTheme.titleMedium,
         ),
         trailing: Text(
           formattedRate,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          style: Theme.of(context).textTheme.bodyMedium,
         ),
         onTap: () {
           showModalBottomSheet(
