@@ -5,11 +5,15 @@ import 'dart:convert';
 import 'currency_model.dart';
 
 class CurrencyService {
-  final String baseUrl = "api.exchangerate.host"; // Used correctly for Uri.https()
-  final String? apiKey = dotenv.env['API_KEY'];
+  final String baseUrl =
+      "api.exchangerate.host"; // Used correctly for Uri.https()
+  final String apiKey;
+  final http.Client client;
 
-  CurrencyService() {
-    if (apiKey == null || apiKey!.isEmpty) {
+  CurrencyService({http.Client? client, String? apiKey})
+    : apiKey = apiKey ?? dotenv.env['API_KEY'] ?? '',
+      client = client ?? http.Client() {
+    if (this.apiKey.isEmpty) {
       throw Exception(
         'API key is missing. Make sure it is defined in the .env file.',
       );
@@ -18,35 +22,37 @@ class CurrencyService {
 
   // Fetch live exchange rates
   Future<ExchangeRates> fetchExchangeRates(String baseCurrency) async {
-  final uri = Uri.https("api.exchangerate.host", "/live", {
-    "access_key": apiKey!,
-    "source": baseCurrency, 
-  });
+    final uri = Uri.https(baseUrl, "/live", {
+      "access_key": apiKey,
+      "source": baseCurrency,
+    });
 
-  final response = await http.get(uri);
+    final response = await client.get(uri);
 
-  if (response.statusCode == 200) {
-    final data = json.decode(response.body);
-    if (data["success"] == true) {
-      return ExchangeRates.fromJson(data);
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data["success"] == true) {
+        return ExchangeRates.fromJson(data);
+      }
     }
+
+    throw Exception('Invalid API response format: ${response.body}');
   }
 
-  throw Exception('Invalid API response format: ${response.body}');
-}
+  // Fetch historical exchange rates for a specific date
+  Future<Map<String, dynamic>> fetchHistoricalRates(
+    String date,
+    String baseCurrency,
+  ) async {
+    final uri = Uri.https(baseUrl, '/historical', {
+      'access_key': apiKey,
+      'date': date, // Required date parameter
+      'source': baseCurrency, // Optional: Base currency (default: USD)
+    });
 
-
-// Fetch historical exchange rates for a specific date
-Future<Map<String, dynamic>> fetchHistoricalRates(String date, String baseCurrency) async {
-  final uri = Uri.https(baseUrl, '/historical', {
-    'access_key': apiKey!,
-    'date': date,        // Required date parameter
-    'source': baseCurrency, // Optional: Base currency (default: USD)
-  });
-
-  final response = await http.get(uri);
-  return _processJsonResponse(response);
-}
+    final response = await client.get(uri);
+    return _processJsonResponse(response);
+  }
 
   // Convert one currency to another
   Future<double> convertCurrency(
@@ -55,13 +61,13 @@ Future<Map<String, dynamic>> fetchHistoricalRates(String date, String baseCurren
     String amount,
   ) async {
     final uri = Uri.https(baseUrl, '/convert', {
-      'access_key': apiKey!,
+      'access_key': apiKey,
       'from': fromCurrency,
       'to': toCurrency,
       'amount': amount,
     });
 
-    final response = await http.get(uri);
+    final response = await client.get(uri);
     final data = _processJsonResponse(response);
 
     if (data.containsKey("result")) {

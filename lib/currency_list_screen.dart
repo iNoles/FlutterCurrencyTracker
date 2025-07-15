@@ -1,210 +1,115 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'currency_model.dart';
-import 'currency_service.dart';
-import 'currency_chart_screen.dart';
-import 'currency_converter_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'currency_list_title.dart';
+import 'providers.dart';
 
-class CurrencyListScreen extends StatefulWidget {
+class CurrencyListScreen extends ConsumerWidget {
   const CurrencyListScreen({super.key});
 
   @override
-  CurrencyListScreenState createState() => CurrencyListScreenState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final supportedCurrencies = ref.watch(supportedCurrenciesProvider);
+    final baseCurrency = ref.watch(baseCurrencyProvider);
+    final exchangeRatesAsync = ref.watch(exchangeRatesProvider);
 
-class CurrencyListScreenState extends State<CurrencyListScreen> {
-  final CurrencyService currencyService = CurrencyService();
-  String baseCurrency = "USD"; // Default base currency
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Exchange Rates'),
         actions: [
-          DropdownButton<String>(
-            value: baseCurrency,
-            onChanged: (String? newValue) {
-              if (newValue != null) {
-                setState(() {
-                  baseCurrency = newValue;
-                });
-              }
-            },
-            items: ["USD", "EUR", "GBP", "JPY", "AUD"]
-                .map((String currency) => DropdownMenuItem(
-                      value: currency,
-                      child: Text(currency),
-                    ))
-                .toList(),
-          ),
-        ],
-      ),
-      body: FutureBuilder<ExchangeRates>(
-        future: currencyService.fetchExchangeRates(baseCurrency),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text("Error: ${snapshot.error}"),
-                  const SizedBox(height: 10),
-                  ElevatedButton(
-                    onPressed: () => setState(() {}),
-                    child: const Text("Retry"),
-                  ),
-                ],
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: baseCurrency,
+                icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
+                dropdownColor: Colors.blue[50],
+                onChanged: (newValue) {
+                  if (newValue != null) {
+                    ref.read(baseCurrencyProvider.notifier).state = newValue;
+                  }
+                },
+                items: supportedCurrencies
+                    .map(
+                      (currency) => DropdownMenuItem(
+                        value: currency,
+                        child: Text(currency, semanticsLabel: 'Base $currency'),
+                      ),
+                    )
+                    .toList(),
               ),
-            );
-          }
-
-          if (snapshot.hasData) {
-            Map<String, double>? quotes = snapshot.data?.quotes;
-            if (quotes != null) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Section Header
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    color: Colors.grey[200],
-                    width: double.infinity,
-                    child: Text(
-                      "1 $baseCurrency =",
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  // Expanded ListView
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: quotes.length,
-                      itemBuilder: (context, index) {
-                        String currencyPair = quotes.keys.elementAt(index);
-                        double rate = quotes[currencyPair] ?? 0.0;
-
-                        // Extract target currency (e.g., "AED" from "USDAED")
-                        String targetCurrency =
-                            currencyPair.replaceFirst(snapshot.data!.sourceCurrency, "");
-
-                        return _CurrencyListTile(
-                          currency: targetCurrency,
-                          rate: rate,
-                          baseCurrency: snapshot.data!.sourceCurrency,
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              );
-            }
-          }
-          return const Center(child: Text("No data available"));
-        },
-      ),
-    );
-  }
-}
-
-class _CurrencyListTile extends StatelessWidget {
-  final String currency;
-  final double rate;
-  final String baseCurrency;
-
-  const _CurrencyListTile({
-    required this.currency,
-    required this.rate,
-    required this.baseCurrency,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final formattedRate = NumberFormat.currency(
-      locale: "en_US",
-      symbol: "",
-    ).format(rate);
-
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(12),
-        title: Text(
-          currency,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        trailing: Text(
-          formattedRate,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        onTap: () {
-          showModalBottomSheet(
-            context: context,
-            builder: (context) => _CurrencyActions(
-              baseCurrency: baseCurrency,
-              targetCurrency: currency,
             ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-// Bottom Sheet for Chart & Conversion Actions
-class _CurrencyActions extends StatelessWidget {
-  final String baseCurrency;
-  final String targetCurrency;
-
-  const _CurrencyActions({
-    required this.baseCurrency,
-    required this.targetCurrency,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      height: 150,
-      child: Column(
-        children: [
-          ListTile(
-            leading: const Icon(Icons.show_chart, color: Colors.blue),
-            title: const Text("View Chart"),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => CurrencyChartScreen(
-                    baseCurrency: baseCurrency,
-                    targetCurrency: targetCurrency,
-                  ),
-                ),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.swap_horiz, color: Colors.green),
-            title: const Text("Convert Currency"),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => CurrencyConverterScreen(
-                    fromCurrency: baseCurrency,
-                    toCurrency: targetCurrency,
-                  ),
-                ),
-              );
-            },
           ),
         ],
       ),
+      body: exchangeRatesAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, stack) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text("Error: $err", style: const TextStyle(color: Colors.red)),
+              const SizedBox(height: 10),
+              ElevatedButton.icon(
+                onPressed: () => ref.refresh(exchangeRatesProvider),
+                icon: const Icon(Icons.refresh),
+                label: const Text("Retry"),
+              ),
+            ],
+          ),
+        ),
+        data: (exchangeRates) => RefreshIndicator(
+          onRefresh: () async => ref.refresh(exchangeRatesProvider),
+          child: CurrencyRatesList(
+            quotes: exchangeRates.quotes,
+            baseCurrency: exchangeRates.sourceCurrency,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class CurrencyRatesList extends StatelessWidget {
+  final Map<String, double> quotes;
+  final String baseCurrency;
+
+  const CurrencyRatesList({
+    super.key,
+    required this.quotes,
+    required this.baseCurrency,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final rates = quotes.entries.toList();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          color: Colors.grey[200],
+          width: double.infinity,
+          child: Text(
+            "1 $baseCurrency =",
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+        ),
+        Expanded(
+          child: ListView.builder(
+            physics: const AlwaysScrollableScrollPhysics(),
+            itemCount: rates.length,
+            itemBuilder: (context, index) {
+              final entry = rates[index];
+              final targetCurrency = entry.key.replaceFirst(baseCurrency, "");
+              return CurrencyListTile(
+                currency: targetCurrency,
+                rate: entry.value,
+                baseCurrency: baseCurrency,
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }
