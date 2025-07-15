@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+
 import 'currency_list_title.dart';
 import 'providers.dart';
 
@@ -62,6 +64,9 @@ class CurrencyListScreen extends ConsumerWidget {
           child: CurrencyRatesList(
             quotes: exchangeRates.quotes,
             baseCurrency: exchangeRates.sourceCurrency,
+            lastUpdated: DateTime.fromMillisecondsSinceEpoch(
+              exchangeRates.timestamp * 1000,
+            ),
           ),
         ),
       ),
@@ -72,16 +77,31 @@ class CurrencyListScreen extends ConsumerWidget {
 class CurrencyRatesList extends StatelessWidget {
   final Map<String, double> quotes;
   final String baseCurrency;
+  final DateTime lastUpdated;
 
   const CurrencyRatesList({
     super.key,
     required this.quotes,
     required this.baseCurrency,
+    required this.lastUpdated,
   });
 
   @override
   Widget build(BuildContext context) {
     final rates = quotes.entries.toList();
+    if (rates.isEmpty) {
+      return Center(
+        child: Text(
+          'No exchange rates available.',
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+      );
+    }
+
+    final lastUpdatedFormatted = DateFormat.yMMMd().add_jm().format(
+      lastUpdated,
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -94,13 +114,34 @@ class CurrencyRatesList extends StatelessWidget {
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
         ),
+
+        // Add Last Updated display here, above the list
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              const Icon(Icons.update, size: 14, color: Colors.grey),
+              const SizedBox(width: 4),
+              Text(
+                'Last Updated: $lastUpdatedFormatted',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+
         Expanded(
           child: ListView.builder(
             physics: const AlwaysScrollableScrollPhysics(),
             itemCount: rates.length,
             itemBuilder: (context, index) {
               final entry = rates[index];
-              final targetCurrency = entry.key.replaceFirst(baseCurrency, "");
+              final targetCurrency = entry.key.startsWith(baseCurrency)
+                  ? entry.key.substring(baseCurrency.length)
+                  : entry.key;
               return CurrencyListTile(
                 currency: targetCurrency,
                 rate: entry.value,

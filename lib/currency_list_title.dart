@@ -18,7 +18,7 @@ class CurrencyListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final formattedRate = NumberFormat.currency(
-      locale: "en_US",
+      locale: Localizations.localeOf(context).toString(),
       symbol: "",
     ).format(rate);
 
@@ -26,25 +26,30 @@ class CurrencyListTile extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(12),
-        title: Text(
-          currency,
-          style: Theme.of(context).textTheme.titleMedium,
+      child: Tooltip(
+        message: 'Tap to see actions for $currency',
+        child: ListTile(
+          contentPadding: const EdgeInsets.all(12),
+          title: Text(
+            currency,
+            style: Theme.of(context).textTheme.titleMedium,
+            semanticsLabel: 'Currency $currency',
+          ),
+          trailing: Text(
+            formattedRate,
+            style: Theme.of(context).textTheme.bodyMedium,
+            semanticsLabel: 'Exchange rate $formattedRate',
+          ),
+          onTap: () {
+            showModalBottomSheet(
+              context: context,
+              builder: (context) => CurrencyActions(
+                baseCurrency: baseCurrency,
+                targetCurrency: currency,
+              ),
+            );
+          },
         ),
-        trailing: Text(
-          formattedRate,
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
-        onTap: () {
-          showModalBottomSheet(
-            context: context,
-            builder: (context) => CurrencyActions(
-              baseCurrency: baseCurrency,
-              targetCurrency: currency,
-            ),
-          );
-        },
       ),
     );
   }
